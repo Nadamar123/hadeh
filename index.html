@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="id"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dohyo Sim – Latihan Robot Sumo 3 kg</title>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:dark;--bg:#101418;--panel:#1b2229;--ink:#ece9e1;--mute:#98a2ab;--line:#33404a;--p1:#f2c230;--p2:#4fb3ff;--ok:#6fd08c;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family:'Chakra Petch',system-ui,sans-serif}
+.scr{display:none;min-height:100%;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;text-align:center;box-sizing:border-box}
+.scr.on{display:flex}
+h1{font-size:clamp(30px,6.5vw,56px);margin:0;line-height:1.05}
+h2{font-size:clamp(22px,4vw,32px);margin:0}
+p{color:var(--mute);max-width:48ch;margin:0;line-height:1.5}
+.row{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+.btn{font:inherit;font-weight:600;font-size:18px;color:var(--ink);background:var(--panel);border:2px solid var(--line);border-radius:6px;padding:14px 22px;min-width:220px;cursor:pointer}
+.btn small{display:block;font-weight:400;font-size:13px;color:var(--mute);margin-top:4px}
+.btn:hover,.btn:focus-visible{border-color:var(--p1);outline:none}
+.btn.ghost{background:none;min-width:0;font-size:15px;padding:10px 18px;color:var(--mute)}
+ol{text-align:left;color:var(--mute);line-height:1.7;max-width:46ch;margin:0;padding-left:20px}
+.stat{font-weight:600;padding:10px 16px;border:2px dashed var(--line);border-radius:6px}
+.stat.ok{color:var(--ok);border-color:var(--ok);border-style:solid}
+#game{padding:0;position:relative;height:100%}
+#cv{width:100%;height:100%;display:block}
+.hud{position:absolute;top:10px;left:0;right:0;display:flex;justify-content:space-between;align-items:flex-start;padding:0 14px;pointer-events:none;font-weight:700}
+.hud .pl{font-size:18px}.hud .dots{font-size:26px;letter-spacing:4px;line-height:1}
+#tm{font-size:28px;text-align:center;color:var(--ink)}
+#ov{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;pointer-events:none;font-size:clamp(40px,10vw,96px);font-weight:700;text-shadow:0 2px 12px #000}
+#ov .row{pointer-events:auto}
+#ov .sub{font-size:20px;color:var(--mute);font-weight:400}
+.tools{position:absolute;bottom:10px;left:0;right:0;display:flex;justify-content:center;gap:10px;flex-wrap:wrap;align-items:center;color:var(--mute);font-size:13px;padding:0 10px}
+.tools .btn{min-width:0;font-size:14px;padding:8px 14px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style></head><body>
+
+<section id="home" class="scr on">
+<svg width="110" height="110" viewBox="-60 -60 120 120" aria-hidden="true"><circle r="54" fill="#0c0e10" stroke="#f3f1ea" stroke-width="5"/><line x1="-8" y1="-8" x2="-8" y2="8" stroke="#a8692f" stroke-width="3"/><line x1="8" y1="-8" x2="8" y2="8" stroke="#a8692f" stroke-width="3"/><rect x="-30" y="-9" width="16" height="16" fill="#f2c230"/><rect x="14" y="-7" width="16" height="16" fill="#4fb3ff" transform="rotate(20 22 1)"/></svg>
+<h1>Dohyo Sim</h1>
+<p>Latihan robot sumo 3kg ya adikku. Pilih cara kamu mengendalikan robot.</p>
+<div class="row">
+<button class="btn" onclick="S.ctl='kb';go('mode')">Pakai keyboard<small>W A S D untuk P1, panah untuk P2</small></button>
+<button class="btn" onclick="S.ctl='pad';go('c1')">Pakai stik PS<small>Sambungkan stik ke browser</small></button>
+</div></section>
+
+<section id="c1" class="scr">
+<h2>Sambungkan stik PS</h2>
+<ol><li>Colok stik lewat kabel USB, atau pasangkan lewat Bluetooth (PS4: tahan Share + PS sampai lampu berkedip).</li><li>Tekan sembarang tombol pada stik.</li><li>Halaman ini lanjut otomatis begitu stik terdeteksi.</li></ol>
+<div class="stat" id="st1">Menunggu stik…</div>
+<button class="btn ghost nt" style="display:none" onclick="window.open(location.href,'_blank')">Stik tidak terdeteksi? Buka di tab baru</button>
+<button class="btn ghost" onclick="go('home')">Kembali</button></section>
+
+<section id="mode" class="scr">
+<h2>Pilih mode main</h2>
+<div class="row">
+<button class="btn" onclick="S.mode='ai';go('lvl')">Player vs AI<small>Latihan sendiri melawan robot AI</small></button>
+<button class="btn" onclick="pickPvp()">Player vs Player<small>Keyboard: WASD vs tombol panah. Stik: dua stik</small></button>
+</div>
+<button class="btn ghost" onclick="go('home')">Kembali</button></section>
+
+<section id="lvl" class="scr">
+<h2>Pilih level AI</h2>
+<div class="row" style="max-width:520px">
+<button class="btn" onclick="begin('easy')">Easy<small>Pelan, sering salah arah, tidak peduli tepi arena</small></button>
+<button class="btn" onclick="begin('normal')">Normal<small>Mulai menjaga diri dari tepi arena</small></button>
+<button class="btn" onclick="begin('hard')">Hard<small>Cepat, reaksi singkat, bisa mengelak</small></button>
+<button class="btn" onclick="begin('extreme')">Extreme<small>Memprediksi gerakanmu, nyaris tanpa jeda</small></button>
+</div>
+<button class="btn ghost" onclick="go('mode')">Kembali</button></section>
+
+<section id="c2" class="scr">
+<h2>Sambungkan stik PS kedua</h2>
+<ol><li>Colok atau pasangkan stik untuk Player 2 (stik pertama tetap tersambung).</li><li>Tekan sembarang tombol pada stik kedua.</li><li>Pertandingan dimulai otomatis begitu stik terdeteksi.</li></ol>
+<div class="stat" id="st2">Menunggu stik…</div>
+<button class="btn ghost nt" style="display:none" onclick="window.open(location.href,'_blank')">Stik tidak terdeteksi? Buka di tab baru</button>
+<button class="btn ghost" onclick="go('mode')">Kembali</button></section>
+
+<section id="game" class="scr">
+<canvas id="cv"></canvas>
+<div class="hud"><div><div class="pl" id="n1" style="color:var(--p1)"></div><div class="dots" id="d1" style="color:var(--p1)"></div></div><div id="tm">60</div><div style="text-align:right"><div class="pl" id="n2" style="color:var(--p2)"></div><div class="dots" id="d2" style="color:var(--p2)"></div></div></div>
+<div id="ov"></div>
+<div class="tools"><span id="hint"></span><button class="btn ghost" id="drv" onclick="toggleDrive()">Kemudi: Arcade</button><button class="btn ghost" onclick="pause()">Jeda (Esc)</button><button class="btn ghost" onclick="go('mode')">Menu</button></div>
+</section>
+
+<script>
+const $=s=>document.querySelector(s),R=.77,H=.1,M=3,I=.02,G=9.81;
+const S={ctl:null,mode:null,level:null};let cur='home',drive='arcade',paused=false;
+function go(id){document.querySelectorAll('.scr').forEach(e=>e.classList.toggle('on',e.id===id));cur=id;if(id!=='game')running=false;$('#ov').innerHTML=''}
+let blocked=false,lost=false,adv=0;
+const pads=()=>{try{const g=navigator.getGamepads?navigator.getGamepads():[];blocked=false;return Array.from(g).filter(p=>p&&p.connected!==false)}catch(e){blocked=true;return[]}};
+const need=()=>S.ctl==='pad'?(S.mode==='pvp'?2:1):0;
+function pickPvp(){S.mode='pvp';if(S.ctl==='kb')begin(null);else go('c2')}
+try{if(top!==self)document.querySelectorAll('.nt').forEach(b=>b.style.display='')}catch(e){document.querySelectorAll('.nt').forEach(b=>b.style.display='')}
+function padPoll(){const L=pads(),n=L.length;
+ const u=(el,nd)=>{const e=$(el),ok=n>=nd;e.textContent=ok?'Terhubung: '+L[nd-1].id.slice(0,44):(blocked?'Browser memblokir akses stik di bingkai ini. Buka halaman di tab baru.':'Menunggu stik… ('+n+' dari '+nd+' terdeteksi). Tekan sembarang tombol pada stik.');e.classList.toggle('ok',ok);return ok};
+ if(cur==='c1'&&u('#st1',1)&&!adv){adv=1;setTimeout(()=>{adv=0;if(cur==='c1')go('mode')},900)}
+ if(cur==='c2'&&u('#st2',2)&&!adv){adv=1;setTimeout(()=>{adv=0;if(cur==='c2')begin(null)},900)}}
+setInterval(padPoll,250);addEventListener('gamepadconnected',padPoll);
+
+/* ---------- physics ---------- */
+const CFG={easy:{speed:.45,react:.45,noise:.55,lead:0,edge:0,dodge:0,idle:.5},
+normal:{speed:.7,react:.22,noise:.25,lead:.05,edge:.1,dodge:0,idle:0},
+hard:{speed:.9,react:.1,noise:.1,lead:.15,edge:.13,dodge:.35,idle:0},
+extreme:{speed:1,react:.03,noise:.02,lead:.25,edge:.16,dodge:.7,idle:0}};
+const VMAX=.9,FST=26,MU=.85,FMAX=MU*M*G/2;
+let rb=[],MT,running=false,last=0,acc=0,keys={};
+const mk=(x,a,col)=>({x,y:0,a,vx:0,vy:0,w:0,ul:0,ur:0,cl:0,cr:0,out:false,f:1,ft:0,col});
+function reset(){rb=[mk(-.2,0,'#f2c230'),mk(.2,Math.PI,'#4fb3ff')];MT.st='count';MT.t=3;MT.left=60;MT.ai=[{tmr:0,s:{x:0,y:0,vx:0,vy:0},n:0,dodge:0,cool:0,idle:0,dir:1},{tmr:0,s:{x:0,y:0,vx:0,vy:0},n:0,dodge:0,cool:0,idle:0,dir:1}]}
+function begin(lv){if(lv)S.level=lv;go('game');MT={score:[0,0],st:'count',t:3,left:60,ai:[]};reset();
+ $('#n1').textContent=S.mode==='ai'?'Kamu':'P1';$('#n2').textContent=S.mode==='ai'?'AI '+S.level[0].toUpperCase()+S.level.slice(1):'P2';
+ $('#hint').textContent=(S.ctl==='kb'?'P1: W A S D':'P1: stik 1')+(S.mode==='pvp'?' · P2: '+(S.ctl==='kb'?'tombol panah':'stik 2'):'');
+ $('#drv').style.display=S.ctl==='pad'?'':'none';paused=false;running=true;last=performance.now();acc=0;fit();requestAnimationFrame(loop)}
+function toggleDrive(){drive=drive==='arcade'?'tank':'arcade';$('#drv').textContent='Kemudi: '+(drive==='arcade'?'Arcade':'Tank')}
+const cl=(v,a,b)=>Math.max(a,Math.min(b,v));
+function drivePhys(r,dt){const c=Math.cos(r.a),s=Math.sin(r.a),k=Math.min(1,dt/.06);r.ul+=(r.cl-r.ul)*k;r.ur+=(r.cr-r.ur)*k;
+ for(const sd of[-1,1]){const rx=-s*.09*sd,ry=c*.09*sd,vpx=r.vx-r.w*ry,vpy=r.vy+r.w*rx,vf=vpx*c+vpy*s,vl=-vpx*s+vpy*c,u=sd<0?r.ul:r.ur;
+  let ff=cl(FST/VMAX*(u*VMAX-vf),-FMAX,FMAX),fl=-150*vl;const lm=Math.max(.35*FMAX,Math.sqrt(Math.max(0,FMAX*FMAX-ff*ff)));fl=cl(fl,-lm,lm);
+  const fx=c*ff-s*fl,fy=s*ff+c*fl;r.vx+=fx/M*dt;r.vy+=fy/M*dt;r.w+=(rx*fy-ry*fx)/I*dt}
+ r.vx*=1-.25*dt;r.vy*=1-.25*dt;r.w*=1-1.2*dt;r.x+=r.vx*dt;r.y+=r.vy*dt;r.a+=r.w*dt}
+function corners(r){const c=Math.cos(r.a),s=Math.sin(r.a),o=[];for(const[x,y]of[[1,1],[1,-1],[-1,-1],[-1,1]])o.push([r.x+(x*c-y*s)*H,r.y+(x*s+y*c)*H]);return o}
+function inBox(p,r){const dx=p[0]-r.x,dy=p[1]-r.y,c=Math.cos(r.a),s=Math.sin(r.a);return Math.abs(dx*c+dy*s)<=H+.003&&Math.abs(-dx*s+dy*c)<=H+.003}
+function imp(A,B,jx,jy,ax,ay,bx,by){A.vx-=jx/M;A.vy-=jy/M;A.w-=(ax*jy-ay*jx)/I;B.vx+=jx/M;B.vy+=jy/M;B.w+=(bx*jy-by*jx)/I}
+function collide(A,B){const ax=[[Math.cos(A.a),Math.sin(A.a)],[-Math.sin(A.a),Math.cos(A.a)],[Math.cos(B.a),Math.sin(B.a)],[-Math.sin(B.a),Math.cos(B.a)]],ca=corners(A),cb=corners(B);let best=1e9,n;
+ for(const q of ax){let a0=1e9,a1=-1e9,b0=1e9,b1=-1e9;for(const p of ca){const d=p[0]*q[0]+p[1]*q[1];a0=Math.min(a0,d);a1=Math.max(a1,d)}for(const p of cb){const d=p[0]*q[0]+p[1]*q[1];b0=Math.min(b0,d);b1=Math.max(b1,d)}
+  const ov=Math.min(a1,b1)-Math.max(a0,b0);if(ov<=0)return;if(ov<best){best=ov;n=q}}
+ if((B.x-A.x)*n[0]+(B.y-A.y)*n[1]<0)n=[-n[0],-n[1]];
+ const pts=[...ca.filter(p=>inBox(p,B)),...cb.filter(p=>inBox(p,A))];let px=(A.x+B.x)/2,py=(A.y+B.y)/2;if(pts.length){px=pts.reduce((s,p)=>s+p[0],0)/pts.length;py=pts.reduce((s,p)=>s+p[1],0)/pts.length}
+ A.x-=n[0]*best*.5;A.y-=n[1]*best*.5;B.x+=n[0]*best*.5;B.y+=n[1]*best*.5;
+ for(let it=0;it<2;it++){const rax=px-A.x,ray=py-A.y,rbx=px-B.x,rby=py-B.y;
+  let rx=B.vx-B.w*rby-(A.vx-A.w*ray),ry=B.vy+B.w*rbx-(A.vy+A.w*rax),vn=rx*n[0]+ry*n[1];if(vn>=0)continue;
+  const cA=rax*n[1]-ray*n[0],cB=rbx*n[1]-rby*n[0],j=-(1+.12)*vn/(2/M+(cA*cA+cB*cB)/I);imp(A,B,n[0]*j,n[1]*j,rax,ray,rbx,rby);
+  rx=B.vx-B.w*rby-(A.vx-A.w*ray);ry=B.vy+B.w*rbx-(A.vy+A.w*rax);const t=[-n[1],n[0]],vt=rx*t[0]+ry*t[1],tA=rax*t[1]-ray*t[0],tB=rbx*t[1]-rby*t[0];
+  const jt=cl(-vt/(2/M+(tA*tA+tB*tB)/I),-.45*j,.45*j);imp(A,B,t[0]*jt,t[1]*jt,rax,ray,rbx,rby)}}
+function step(dt){for(const r of rb){if(r.out){r.ft+=dt;r.f=Math.max(0,1-r.ft*1.3);r.x+=r.vx*dt;r.y+=r.vy*dt;r.a+=r.w*dt;r.vx*=1-.5*dt;r.vy*=1-.5*dt;continue}drivePhys(r,dt)}
+ if(!rb[0].out&&!rb[1].out)collide(rb[0],rb[1]);
+ for(const r of rb)if(!r.out&&Math.hypot(r.x,r.y)>R)r.out=true}
+
+/* ---------- input & AI ---------- */
+addEventListener('keydown',e=>{keys[e.code]=1;if(e.code==='Escape'||e.code==='KeyP')pause();if(cur==='game'&&e.code.startsWith('Arrow'))e.preventDefault()});
+addEventListener('keyup',e=>keys[e.code]=0);
+function kb(u,d,l,r){const t=(keys[u]?1:0)-(keys[d]?1:0),s=(keys[r]?1:0)-(keys[l]?1:0);let a=t+s,b=t-s;const m=Math.max(1,Math.abs(a),Math.abs(b));return[a/m,b/m]}
+function padCmd(p){if(!p)return[0,0];const dz=v=>Math.abs(v)<.12?0:v,x=p.axes,B=i=>p.buttons[i]&&p.buttons[i].pressed;let l,r;
+ if(drive==='tank'){l=-dz(x[1]||0);r=-dz(x[3]||0)}else{const t=-dz(x[1]||0),s=dz(x[2]||0)||dz(x[0]||0);l=t+s;r=t-s}
+ if(B(12)||B(13)||B(14)||B(15)){const t=(B(12)?1:0)-(B(13)?1:0),s=(B(15)?1:0)-(B(14)?1:0);l=t+.8*s;r=t-.8*s}
+ const m=Math.max(1,Math.abs(l),Math.abs(r));return[l/m,r/m]}
+const nrm=a=>{while(a>Math.PI)a-=2*Math.PI;while(a<-Math.PI)a+=2*Math.PI;return a};
+function aiCmd(me,op,c,st,dt){st.tmr-=dt;st.cool-=dt;
+ if(st.tmr<=0){st.tmr=c.react;st.s={x:op.x,y:op.y,vx:op.vx,vy:op.vy};st.n=(Math.random()*2-1)*c.noise;if(c.idle&&st.idle<=0&&Math.random()<.12)st.idle=.6+Math.random()*.6}
+ if(st.idle>0){st.idle-=dt;return[0,0]}
+ if(st.dodge>0){st.dodge-=dt;return st.dir>0?[1,.05]:[.05,1]}
+ const dc=Math.hypot(me.x,me.y);
+ if(c.edge&&dc>R-c.edge){const ac=nrm(Math.atan2(-me.y,-me.x)-me.a);if(Math.abs(ac)>1.6)return[-.9,-.9];const s=cl(ac*2,-1,1);return[.8+s*.5,.8-s*.5].map(v=>cl(v,-1,1))}
+ const dx=op.x-me.x,dy=op.y-me.y,dist=Math.hypot(dx,dy)||1,ux=dx/dist,uy=dy/dist,cs=-((op.vx-me.vx)*ux+(op.vy-me.vy)*uy);
+ if(c.dodge&&st.cool<=0&&dist<.45&&cs>.35){const fa=Math.abs(nrm(me.a-Math.atan2(dy,dx)));if(fa<.5&&Math.random()<c.dodge){st.dodge=.35;st.cool=1.4;st.dir=Math.random()<.5?1:-1}}
+ const o=st.s,ang=nrm(Math.atan2(o.y+o.vy*c.lead-me.y,o.x+o.vx*c.lead-me.x)-me.a+st.n);
+ let sp=dist<.35?Math.min(1,c.speed+.2):c.speed,l,r;
+ if(Math.abs(ang)>1.3){const s=Math.sign(ang);l=s;r=-s;sp=Math.max(sp*.8,.4)}else{const t=Math.max(.2,Math.cos(ang)),s=cl(ang*2.2,-1,1);l=t+.8*s;r=t-.8*s;const m=Math.max(1,Math.abs(l),Math.abs(r));l/=m;r/=m}
+ return[l*sp,r*sp]}
+function cmds(dt){const pd=pads();let a,b;
+ a=S.ctl==='kb'?kb('KeyW','KeyS','KeyA','KeyD'):padCmd(pd[0]);
+ if(S.mode==='ai')b=aiCmd(rb[1],rb[0],CFG[S.level],MT.ai[1],dt);else b=S.ctl==='kb'?kb('ArrowUp','ArrowDown','ArrowLeft','ArrowRight'):padCmd(pd[1]);
+ [rb[0].cl,rb[0].cr]=a;[rb[1].cl,rb[1].cr]=b}
+
+/* ---------- match flow ---------- */
+function say(t,sub,btns){$('#ov').innerHTML=(t?'<div>'+t+'</div>':'')+(sub?'<div class="sub">'+sub+'</div>':'')+(btns||'')}
+function pause(){if(cur!=='game'||MT.st==='over')return;paused=!paused;say(paused?'Jeda':'',paused?'Tekan Esc untuk lanjut':'')}
+function endRound(w,why){MT.st='end';MT.t=2.3;if(w>=0){MT.score[w]++;say((w===0?$('#n1').textContent:$('#n2').textContent)+' menang ronde',why)}else say('Seri','Ronde diulang')}
+function update(dt){if(paused)return;
+ if(MT.st==='count'){rb.forEach(r=>{r.cl=r.cr=0});step(dt);MT.t-=dt;const n=Math.ceil(MT.t);if(n>0){if(MT.shown!==n){MT.shown=n;say(n)}}else{MT.st='run';MT.shown=0;say('Hajime!');setTimeout(()=>{if(MT.st==='run')say('')},700)}return}
+ if(MT.st==='run'){cmds(dt);step(dt);MT.left-=dt;const o=rb.map(r=>r.out);
+  if(o[0]||o[1]){if(o[0]&&o[1])endRound(-1);else endRound(o[0]?1:0,'Robot lawan keluar dohyo')}
+  else if(MT.left<=0){const d=rb.map(r=>Math.hypot(r.x,r.y));if(Math.abs(d[0]-d[1])<.02)endRound(-1);else endRound(d[0]<d[1]?0:1,'Waktu habis, lebih dekat ke tengah')}}
+ else if(MT.st==='end'){rb.forEach(r=>{r.cl=r.cr=0});step(dt);MT.t-=dt;if(MT.t<=0){
+  if(MT.score[0]>=2||MT.score[1]>=2){MT.st='over';const w=MT.score[0]>=2?0:1;say((w?$('#n2').textContent:$('#n1').textContent)+' menang pertandingan',MT.score[0]+' – '+MT.score[1],'<div class="row"><button class="btn" onclick="begin()">Main lagi</button><button class="btn ghost" onclick="go(\'mode\')">Menu</button></div>')}
+  else{reset();say('')}}}}
+function loop(t){if(!running)return;const lo=pads().length<need();if(lo!==lost){lost=lo;say(lo?'Stik terputus':'',lo?'Sambungkan lagi dan tekan satu tombol':'')}
+ if(lost){last=t;draw();requestAnimationFrame(loop);return}
+ acc+=Math.min(.05,(t-last)/1000);last=t;while(acc>=1/120){update(1/120);acc-=1/120}draw();requestAnimationFrame(loop)}
+
+/* ---------- drawing ---------- */
+const cv=$('#cv'),cx=cv.getContext('2d');let k=1,dpr=1;
+function fit(){dpr=devicePixelRatio||1;cv.width=cv.clientWidth*dpr;cv.height=cv.clientHeight*dpr;k=Math.min(cv.clientWidth,cv.clientHeight*.82)/(2*R+.08)}
+addEventListener('resize',()=>{if(cur==='game')fit()});
+function draw(){const W=cv.clientWidth,Hh=cv.clientHeight;cx.setTransform(dpr,0,0,dpr,0,0);cx.fillStyle='#1a2026';cx.fillRect(0,0,W,Hh);
+ cx.setTransform(dpr*k,0,0,dpr*k,dpr*W/2,dpr*(Hh/2+18));
+ cx.beginPath();cx.arc(.012,.02,R+.02,0,7);cx.fillStyle='rgba(0,0,0,.45)';cx.fill();
+ cx.beginPath();cx.arc(0,0,R,0,7);cx.fillStyle='#0d0f11';cx.fill();
+ cx.beginPath();cx.arc(0,0,R-.025,0,7);cx.strokeStyle='#f3f1ea';cx.lineWidth=.05;cx.stroke();
+ cx.strokeStyle='#a8692f';cx.lineWidth=.012;for(const sx of[-.1,.1]){cx.beginPath();cx.moveTo(sx,-.05);cx.lineTo(sx,.05);cx.stroke()}
+ cx.fillStyle='#2b3138';cx.beginPath();cx.arc(0,0,.008,0,7);cx.fill();
+ for(const r of rb.slice().sort((a,b)=>b.out-a.out)){cx.save();cx.translate(r.x,r.y);cx.rotate(r.a);cx.scale(r.f,r.f);
+  cx.fillStyle='#0a0a0a';for(const sy of[-1,1])cx.fillRect(-.04,sy*.1-(sy>0?0:.02),.08,.02);
+  cx.fillStyle=r.col;cx.fillRect(-H,-H,2*H,2*H);cx.fillStyle='rgba(255,255,255,.55)';cx.beginPath();cx.moveTo(H,-H);cx.lineTo(H,H);cx.lineTo(H-.035,H);cx.lineTo(H-.035,-H);cx.fill();
+  cx.strokeStyle='rgba(0,0,0,.5)';cx.lineWidth=.004;cx.strokeRect(-H,-H,2*H,2*H);cx.restore()}
+ $('#tm').textContent=Math.max(0,Math.ceil(MT.left));
+ for(const i of[0,1])$('#d'+(i+1)).textContent='●'.repeat(MT.score[i])+'○'.repeat(2-Math.min(2,MT.score[i]))}
+</script></body></html>
